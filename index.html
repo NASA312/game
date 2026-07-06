@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Desafío Matemático Móvil</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+            padding: 15px;
+        }
+
+        .game-container {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 360px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #4a5568;
+            margin-bottom: 15px;
+            font-size: 22px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #718096;
+            background: #f7fafc;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .operation {
+            font-size: 42px;
+            font-weight: bold;
+            margin: 25px 0;
+            color: #2d3748;
+            min-height: 50px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 15px;
+            font-size: 24px;
+            border: 2px solid #cbd5e0;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+            outline: none;
+            -moz-appearance: textfield;
+        }
+        
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            background-color: #4c51bf;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        button.verify-mode { background-color: #48bb78; }
+        button.next-mode { background-color: #4299e1; }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .message {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            min-height: 27px;
+        }
+
+        .correct { color: #38a169; }
+        .incorrect { color: #e53e3e; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <h1>¡Reto Matemático!</h1>
+        
+        <div class="stats">
+            <div>Puntos: <span id="score">0</span></div>
+            <div>Racha: <span id="streak">0</span></div>
+        </div>
+
+        <div class="operation" id="operation-display">Presiona Iniciar</div>
+
+        <input type="number" id="answer-input" pattern="[0-9]*" inputmode="numeric" placeholder="¿Respuesta?" autocomplete="off" disabled>
+        
+        <button id="action-btn">Iniciar Juego</button>
+
+        <div class="message" id="message-display"></div>
+    </div>
+
+    <script>
+        // Todo se ejecuta hasta que la pantalla cargue completamente
+        window.onload = function() {
+            let score = 0;
+            let streak = 0;
+            let currentAnswer = 0;
+            let gameState = "START"; // Estados: START, PLAYING, NEXT
+
+            const operationDisplay = document.getElementById('operation-display');
+            const answerInput = document.getElementById('answer-input');
+            const actionBtn = document.getElementById('action-btn');
+            const scoreDisplay = document.getElementById('score');
+            const streakDisplay = document.getElementById('streak');
+            const messageDisplay = document.getElementById('message-display');
+
+            function generateOperation() {
+                const operators = ['+', '-', '*', '/'];
+                const operator = operators[Math.floor(Math.random() * operators.length)];
+                let num1, num2;
+
+                switch(operator) {
+                    case '+':
+                        num1 = Math.floor(Math.random() * 40) + 10;
+                        num2 = Math.floor(Math.random() * 40) + 10;
+                        currentAnswer = num1 + num2;
+                        break;
+                    case '-':
+                        num1 = Math.floor(Math.random() * 50) + 10;
+                        num2 = Math.floor(Math.random() * (num1 - 1)) + 1;
+                        currentAnswer = num1 - num2;
+                        break;
+                    case '*':
+                        num1 = Math.floor(Math.random() * 10) + 2;
+                        num2 = Math.floor(Math.random() * 9) + 2;
+                        currentAnswer = num1 * num2;
+                        break;
+                    case '/':
+                        num2 = Math.floor(Math.random() * 8) + 2; 
+                        currentAnswer = Math.floor(Math.random() * 9) + 2; 
+                        num1 = num2 * currentAnswer;
+                        break;
+                }
+
+                // Renderizar la operación de forma segura
+                let symbol = operator;
+                if(operator === '*') symbol = '×';
+                if(operator === '/') symbol = '÷';
+
+                operationDisplay.textContent = num1 + " " + symbol + " " + num2;
+                answerInput.value = '';
+                answerInput.disabled = false;
+                messageDisplay.textContent = '';
+                
+                actionBtn.textContent = "Verificar";
+                actionBtn.className = "verify-mode"; 
+                gameState = "PLAYING";
+            }
+
+            function checkAnswer() {
+                const userAnswer = parseInt(answerInput.value, 10);
+
+                if (isNaN(userAnswer)) {
+                    messageDisplay.textContent = "Escribe un número";
+                    messageDisplay.className = "message incorrect";
+                    return;
+                }
+
+                answerInput.disabled = true; 
+
+                if (userAnswer === currentAnswer) {
+                    score += 10;
+                    streak++;
+                    messageDisplay.textContent = "¡Correcto! 🎉";
+                    messageDisplay.className = "message correct";
+                } else {
+                    streak = 0;
+                    messageDisplay.textContent = "Incorrecto 😢 Era " + currentAnswer;
+                    messageDisplay.className = "message incorrect";
+                }
+
+                scoreDisplay.textContent = score;
+                streakDisplay.textContent = streak;
+
+                actionBtn.textContent = "Siguiente desafío";
+                actionBtn.className = "next-mode";
+                gameState = "NEXT";
+            }
+
+            // Manejador único del botón principal
+            actionBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (gameState === "START" || gameState === "NEXT") {
+                    generateOperation();
+                } else if (gameState === "PLAYING") {
+                    checkAnswer();
+                }
+            });
+            
+            // Soporte para la tecla Enter/Ir del teclado móvil
+            answerInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (gameState === "PLAYING") {
+                        checkAnswer();
+                    }
+                }
+            });
+        };
+    </script>
+</body>
+</html>
